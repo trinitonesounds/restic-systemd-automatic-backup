@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Check my backup with  restic to Backblaze B2 for errors.
+# Check  for errors in the repository with "restic check".
 # This script is typically run by: /etc/systemd/system/restic-check.{service,timer}
 
 # Exit on failure, pipe failure
@@ -9,17 +9,25 @@ set -e -o pipefail
 # If killed by systemd, like $(systemctl stop restic), then it kills the whole cgroup and all it's subprocesses.
 # However if we kill this script ourselves, we need this trap that kills all subprocesses manually.
 exit_hook() {
-	echo "In exit_hook(), being killed" >&2
-	jobs -p | xargs kill
-	restic unlock
+    echo "In exit_hook(), being killed" >&2
+    jobs -p | xargs kill
+    restic unlock
 }
 trap exit_hook INT TERM
 
 
-source /etc/restic/b2_env.sh
+source /etc/restic/restic_env.sh
 
-# How many network connections to set up to B2. Default is 5.
-B2_CONNECTIONS=50
+# Special options
+declare -A RESTIC_OPTIONS
+for opt in B2_CONNECTIONS OTHER
+do
+    if [[ ${!opt:-notset} = "notset" ]]; then
+        RESTIC_OPTIONS+=""
+    else
+        RESTIC_OPTIONS+="--option ${!opt} "
+    fi
+done
 
 # Remove locks from other stale processes to keep the automated backup running.
 # NOTE nope, don't unlock like restic_backup.sh. restic_backup.sh should take precedence over this script.
@@ -28,6 +36,6 @@ B2_CONNECTIONS=50
 
 # Check repository for errors.
 restic check \
-	--option b2.connections=$B2_CONNECTIONS \
-	--verbose &
+    "${RESTIC_OPTIONS[*]}"  \
+    --verbose &
 wait $!
