@@ -46,3 +46,5 @@ install-conf: | etc/restic/restic_env.sh etc/restic/restic_pw.txt
 install-systemd:
 	install -d $(DEST_SYSTEMD)
 	install -m 0644 $(SRCS_SYSTEMD) $(DEST_SYSTEMD)
+	install -m 700 -d /var/cache/restic
+	systemctl daemon-reload

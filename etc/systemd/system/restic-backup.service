@@ -1,11 +1,29 @@
 [Unit]
 Description=Backup with restic to SFTP service
+Documentation=man:restic(1)
+Documentation=https://restic.readthedocs.io/en/stable/
 OnFailure=status-email-user@%n.service
+Requires=local-fs.target
 Requires=nm-unmetered-connection.service
 
 [Service]
-Type=simple
+Type=oneshot
 Nice=10
-ExecStart=/usr/local/sbin/restic_backup.sh
 # $HOME or $XDG_CACHE_HOME must be set for restic to find /root/.cache/restic/
+Environment="RESTIC_CACHE_DIR=/var/cache/restic"
 Environment="HOME=/root"
+ExecStart=/usr/local/sbin/restic_backup.sh
+#ExecStartPost=/usr/local/sbin/restic-exporter.sh
+
+# Security hardening (see man 5 systemd.exec)
+PrivateTmp=true
+ProtectHome=read-only
+ProtectSystem=full
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+ProtectControlGroups=true
+PrivateDevices=true
+MemoryDenyWriteExecute=true
+# add  /var/lib/node-exporter  if you use the prometheus exporter
+ReadWritePaths=/var/cache/restic

@@ -3,7 +3,9 @@ Description=Backup with restic on schedule
 Requires=nm-unmetered-connection.service
 
 [Timer]
-OnCalendar=daily
+# every day at 12:30 AM
+OnCalendar=*-*-* 00:30:00
+RandomizedDelaySec=600
 Persistent=true
 
 [Install]

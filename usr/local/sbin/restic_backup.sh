@@ -15,15 +15,9 @@ exit_hook() {
 }
 trap exit_hook INT TERM
 
-# How many backups to keep.
-RETENTION_DAYS=14
-RETENTION_WEEKS=16
-RETENTION_MONTHS=18
-RETENTION_YEARS=3
-
-# What to backup, and what to not
-BACKUP_PATHS="/ /boot /home"
+# add to backup paths (if it exists)
 [ -d /mnt/media ] && BACKUP_PATHS+=" /mnt/media"
+# Add any local exclusion to backup
 BACKUP_EXCLUDES="--exclude-file /etc/restic/backup_exclude"
 for dir in /home/*
 do
