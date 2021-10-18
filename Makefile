@@ -30,15 +30,15 @@ install-scripts:
 	install -d $(DEST_SCRIPTS)
 	install -m 0744 $(SRCS_SCRIPTS) $(DEST_SCRIPTS)
 
-etc/restic/b2_env.sh:
-	install -m 0600 etc/restic/b2_env.sh.template etc/restic/b2_env.sh
+etc/restic/restic_env.sh:
+	install -m 0600 etc/restic/restic_env.sh.template etc/restic/restic_env.sh
 
-etc/restic/b2_pw.txt:
-	install -m 0600 etc/restic/b2_pw.txt.template etc/restic/b2_pw.txt
+etc/restic/restic_pw.txt:
+	install -m 0600 etc/restic/restic_pw.txt.template etc/restic/restic_pw.txt
 
 # target: install-conf - Install restic configuration files.
 # will create these files locally only if they don't already exist
-install-conf: | etc/restic/b2_env.sh etc/restic/b2_pw.txt
+install-conf: | etc/restic/restic_env.sh etc/restic/restic_pw.txt
 	install -d $(DEST_CONF)
 	install -m 0600 $(SRCS_CONF) $(DEST_CONF)
 
