@@ -2,6 +2,8 @@
 
 ## Restic
 
+**Note:**  This version has been extended from upstream (BackBlaze only) to work with SFTP.  The instructions below are not current.
+
 [restic](https://restic.net/) is a command-line tool for making backups, the right way. Check the official website for a feature explanation. As a storage backend, I recommend [Backblaze B2](https://www.backblaze.com/b2/cloud-storage.html) as restic works well with it, and it is (at the time of writing) very affordable for the hobbyist hacker!
 
 Unfortunately restic does not come pre-configured with a way to run automated backups, say every day. However it's possible to set this up yourself using systemd/cron and some wrappers. This example also features email notifications when a backup fails to complete.
