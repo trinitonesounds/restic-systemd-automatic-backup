@@ -13,6 +13,8 @@ Here follows a step-by step tutorial on how to set it up, with my sample script 
 
 Note, you can use any of the supported [storage backends](https://restic.readthedocs.io/en/latest/030_preparing_a_new_repo.html). The setup should be similar but you will have to use other configuration variables to match your backend of choice.
 
+# Requirements
+* `restic >=v0.9.6`
 
 ## Set up
 
@@ -31,7 +33,6 @@ First, see this official Backblaze [tutorial](https://help.backblaze.com/hc/en-u
 Take note of the your account ID, application key and password for the next steps.
 
 
-
 ### 2. Configure your B2 account locally
 Put these files in `/etc/restic/`:
 * `b2_env.sh`: Fill this file out with your B2 bucket settings etc. The reason for putting these in a separate file is that it can be used also for you to simply source, when you want to issue some restic commands. For example:
@@ -44,8 +45,8 @@ $ restic snapshots    # You don't have to supply all parameters like --repo, as 
 ### 3. Initialize remote repo
 Now we must initialize the repository on the remote end:
 ```console
-source /etc/restic/b2_env.sh
-restic init
+$ source /etc/restic/b2_env.sh
+$ restic init
 ```
 
 ### 4. Script for doing the backup
@@ -129,3 +130,11 @@ If you want to run an all-classic cron job instead, do like this:
 
 * `etc/cron.d/restic`: Depending on your system's cron, put this in `/etc/cron.d/` or similar, or copy the contents to $(sudo crontab -e). The format of this file is tested under FreeBSD, and might need adaptions depending on your cron.
 * `usr/local/sbin/cron_mail`: A wrapper for running cron jobs, that sends output of the job as an email using the mail(1) command.
+
+## Uninstall
+
+There is a make target to remove all files (scripts and configs) that were installed by `sudo make install`. Just run:
+
+```console
+$ sudo make uninstall
+```

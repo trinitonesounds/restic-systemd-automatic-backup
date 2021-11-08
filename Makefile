@@ -1,5 +1,5 @@
 # Not file targets.
-.PHONY: help install install-scripts install-conf install-systemd
+.PHONY: help install install-scripts install-conf install-systemd uninstall
 
 ### Macros ###
 SRCS_SCRIPTS	= $(filter-out %cron_mail, $(wildcard usr/local/sbin/*))
@@ -12,6 +12,8 @@ DEST_SCRIPTS	= $(PREFIX)/usr/local/sbin
 DEST_CONF	= $(PREFIX)/etc/restic
 DEST_SYSTEMD	= $(PREFIX)/etc/systemd/system
 
+INSTALLED_FILES = $(addprefix $(PREFIX)/, $(SRCS_SCRIPTS) $(SRCS_CONF) $(SRCS_SYSTEMD)) \
+			$(DEST_CONF)/restic_env.sh $(DEST_CONF)/restic_pw.txt
 
 ### Targets ###
 # target: all - Default target.
@@ -48,3 +50,10 @@ install-systemd:
 	install -m 0644 $(SRCS_SYSTEMD) $(DEST_SYSTEMD)
 	install -m 700 -d /var/cache/restic
 	systemctl daemon-reload
+
+# target: uninstall - Uninstall files from the install targets
+uninstall:
+	@for file in $(INSTALLED_FILES); do \
+			echo $(RM) $$file; \
+			$(RM) $$file; \
+	done
