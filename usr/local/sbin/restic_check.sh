@@ -23,7 +23,7 @@ declare -A RESTIC_OPTIONS
 for opt in B2_CONNECTIONS OTHER
 do
     if [[ ${!opt:-notset} = "notset" ]]; then
-        RESTIC_OPTIONS+=""
+        RESTIC_OPTIONS+=
     else
         RESTIC_OPTIONS+="--option ${!opt} "
     fi
@@ -36,6 +36,6 @@ done
 
 # Check repository for errors.
 restic check \
-    "${RESTIC_OPTIONS[*]}"  \
+    ${RESTIC_OPTIONS[*]}  \
     --verbose &
 wait $!

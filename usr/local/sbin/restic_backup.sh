@@ -48,7 +48,7 @@ declare -A RESTIC_OPTIONS
 for opt in B2_CONNECTIONS OTHER
 do
     if [[ ${!opt:-notset} = "notset" ]]; then
-        RESTIC_OPTIONS+=""
+        RESTIC_OPTIONS+=
     else
         RESTIC_OPTIONS+="--option ${!opt} "
     fi
@@ -63,7 +63,7 @@ restic backup \
     --verbose \
     --one-file-system \
     --tag $BACKUP_TAG \
-    "${RESTIC_OPTIONS[*]}"  \
+    ${RESTIC_OPTIONS[*]}  \
     $BACKUP_EXCLUDES \
     $BACKUP_PATHS &
 wait $!
@@ -75,7 +75,7 @@ wait $!
 restic forget \
     --verbose \
     --tag $BACKUP_TAG \
-    "${RESTIC_OPTIONS[*]}"  \
+    ${RESTIC_OPTIONS[*]}  \
     --prune \
     --keep-daily $RETENTION_DAYS \
     --keep-weekly $RETENTION_WEEKS \
