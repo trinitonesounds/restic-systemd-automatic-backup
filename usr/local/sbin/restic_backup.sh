@@ -75,6 +75,7 @@ wait $!
 restic forget \
     --verbose \
     --tag $BACKUP_TAG \
+    --host $HOSTNAME \
     ${RESTIC_OPTIONS[*]}  \
     --prune \
     --keep-daily $RETENTION_DAYS \
