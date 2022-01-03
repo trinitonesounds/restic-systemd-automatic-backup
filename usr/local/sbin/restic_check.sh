@@ -36,6 +36,6 @@ done
 
 # Check repository for errors.
 restic check \
-    ${RESTIC_OPTIONS[*]}  \
-    --verbose &
+        ${RESTIC_OPTIONS[*]}  \
+        --verbose &
 wait $!

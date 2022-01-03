@@ -60,12 +60,12 @@ done
 # --one-file-system makes sure we only backup exactly those mounted file systems specified in $BACKUP_PATHS, and thus not directories like /dev, /sys etc.
 # --tag lets us reference these backups later when doing restic-forget.
 restic backup \
-    --verbose \
-    --one-file-system \
-    --tag $BACKUP_TAG \
-    ${RESTIC_OPTIONS[*]}  \
-    $BACKUP_EXCLUDES \
-    $BACKUP_PATHS &
+        --verbose \
+        --one-file-system \
+        --tag $BACKUP_TAG \
+        ${RESTIC_OPTIONS[*]}  \
+        $BACKUP_EXCLUDES \
+        $BACKUP_PATHS &
 wait $!
 
 # Dereference and delete/prune old backups.
@@ -73,15 +73,15 @@ wait $!
 # --group-by only the tag and path, and not by hostname. This is if you create a repo per host, and if the hostname accidentially change some time, there would now be multiple backup sets.
     #--group-by "paths,tags" \
 restic forget \
-    --verbose \
-    --tag $BACKUP_TAG \
-    --host $HOSTNAME \
-    ${RESTIC_OPTIONS[*]}  \
-    --prune \
-    --keep-daily $RETENTION_DAYS \
-    --keep-weekly $RETENTION_WEEKS \
-    --keep-monthly $RETENTION_MONTHS \
-    --keep-yearly $RETENTION_YEARS &
+        --verbose \
+        --tag $BACKUP_TAG \
+        --host $HOSTNAME \
+        ${RESTIC_OPTIONS[*]}  \
+        --prune \
+        --keep-daily $RETENTION_DAYS \
+        --keep-weekly $RETENTION_WEEKS \
+        --keep-monthly $RETENTION_MONTHS \
+        --keep-yearly $RETENTION_YEARS &
 wait $!
 
 # Check repository for errors.
