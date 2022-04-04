@@ -1,6 +1,5 @@
 [Unit]
 Description=Backup with restic on schedule
-Requires=nm-unmetered-connection.service
 
 [Timer]
 # every day at 12:30 AM
