@@ -1,23 +1,26 @@
 [Unit]
-Description=Backup with restic to SFTP service
+Description=Backup with restic to external service
 Documentation=man:restic(1)
 Documentation=https://restic.readthedocs.io/en/stable/
 # If the backup fails, retry every 5 minutes for 4 tries (20 minutes) beforre
 # entering Failed state and sending a notification email
 StartLimitIntervalSec=1260
 StartLimitBurst=4
++# Email on failure require special setup. See README.md
 OnFailure=status-email-user@%n.service
 Requires=local-fs.target
++# Prevent backup on unmetered connection. Needs special setup. See README.md.
 Requires=nm-unmetered-connection.service
 
 [Service]
-Type=oneshot
+Type=simple
 Nice=10
 # $HOME or $XDG_CACHE_HOME must be set for restic to find /root/.cache/restic/
 Environment="RESTIC_CACHE_DIR=/var/cache/restic"
 Environment="HOME=/root"
-ExecStart=/usr/local/sbin/restic_backup.sh
-#ExecStartPost=/usr/local/sbin/restic-exporter.sh
+# The random sleep (in seconds) is in the case of multiple backup profiles. Many restic instances started at the same time could case high load or network bandwith usage.
+# `systemd-cat` allows showing the restic output to the systemd journal
+ExecStart=bash -c 'ps cax | grep -q restic && sleep $(shuf -i 0-300 -n 1); source $INSTALL_PREFIX/etc/restic/%I.env.sh && $INSTALL_PREFIX/bin/restic_backup.sh 2>&1 | systemd-cat'
 Restart=on-failure
 RestartSec=300
 

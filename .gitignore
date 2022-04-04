@@ -1,2 +1,8 @@
-/etc/restic/b2_pw.txt
-/etc/restic/b2_env.sh
+# make install
+/build
+
+# IntelliJ
+.idea/
+*.iml
+# VSCode
+.vscode/
