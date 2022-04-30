@@ -11,7 +11,7 @@
 # The restic repository encryption key
 export RESTIC_PASSWORD_FILE="$INSTALL_PREFIX/etc/restic/pw.txt"
 # The global restic exclude file
-export RESTIC_BACKUP_EXCLUDE_FILE="$INSTALL_PREFIX/etc/restic/backup_exclude.txt"
+export RESTIC_BACKUP_EXCLUDE_FILE="$INSTALL_PREFIX/etc/restic/backup_exclude.txt" <<<<<<< HEAD
 
 # SFTP Repository
 # Be sure to define an SSH config Host for "restic-sftp"

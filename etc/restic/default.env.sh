@@ -27,7 +27,7 @@ export RESTIC_PASSWORD_FILE="/etc/restic/restic_pw.txt"
 
 # What to backup. Colon-separated paths e.g. to different mountpoints "/home:/mnt/usb_disk".
 # To backup only your home directory, set "/home/your-user"
-export RESTIC_BACKUP_PATHS="/ "  # *EDIT* fill conveniently with one or multiple paths
+export RESTIC_BACKUP_PATHS=""  # *EDIT* fill conveniently with one or multiple paths
 
 
 # Example below of how to dynamically add a path that is mounted e.g. external USB disk.

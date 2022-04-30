@@ -1,5 +1,6 @@
 # Automatic restic Backups using Native OS Task Schedulers
 *formerly named restic-systemd-automatic-backup*
+<<<<<<< HEAD
 
 [![GitHub Stars](https://img.shields.io/github/stars/erikw/restic-automatic-backup-scheduler?style=social)](#)
 [![GitHub Forks](https://img.shields.io/github/forks/erikw/restic-automatic-backup-scheduler?style=social)](#)
@@ -25,11 +26,45 @@
 [restic](https://restic.net/) is a command-line tool for making backups, the right way. Check the official website for a feature explanation. As a storage backend, I recommend [Backblaze B2](https://www.backblaze.com/b2/cloud-storage.html) as restic works well with it, and it is (at the time of writing) very affordable for the hobbyist hacker! (anecdotal: I pay for my full-systems backups each month typically < 1 USD).
 
 Unfortunately restic does not come pre-configured with a way to run automated backups, say every day. However it's possible to set this up yourself using built-in tools in your OS and some wrappers. For Linux with systemd, it's convenient to use systemd timers. For macOS systems, we can use built-in LaunchAgents. For Windows we can use ScheduledTasks. Any OS having something cron-like will also work!
+=======
+>>>>>>> f1d48dceabd5468150b8fadc1ed435e967764075
 
-## Restic
+[![GitHub Stars](https://img.shields.io/github/stars/erikw/restic-automatic-backup-scheduler?style=social)](#)
+[![GitHub Forks](https://img.shields.io/github/forks/erikw/restic-automatic-backup-scheduler?style=social)](#)
+<br>
+[![Lint Code Base](https://github.com/erikw/restic-automatic-backup-scheduler/actions/workflows/linter.yml/badge.svg)](https://github.com/erikw/restic-automatic-backup-scheduler/actions/workflows/linter.yml)
+[![Latest tag](https://img.shields.io/github/v/tag/erikw/restic-automatic-backup-scheduler)](https://github.com/erikw/restic-automatic-backup-scheduler/tags)
+[![AUR version](https://img.shields.io/aur/version/restic-automatic-backup-scheduler)](https://aur.archlinux.org/packages/restic-automatic-backup-scheduler/)
+[![AUR maintainer](https://img.shields.io/aur/maintainer/restic-automatic-backup-scheduler?label=AUR%20maintainer)](https://aur.archlinux.org/packages/restic-automatic-backup-scheduler/)
+[![Homebrew Formula](https://img.shields.io/badge/homebrew-erikw%2Ftap-orange)](https://github.com/erikw/homebrew-tap)
+[![Open issues](https://img.shields.io/github/issues/erikw/restic-automatic-backup-scheduler)](https://github.com/erikw/restic-automatic-backup-scheduler/issues)
+[![Closed issues](https://img.shields.io/github/issues-closed/erikw/restic-automatic-backup-scheduler?color=success)](https://github.com/erikw/restic-automatic-backup-scheduler/issues?q=is%3Aissue+is%3Aclosed)
+[![Closed PRs](https://img.shields.io/github/issues-pr-closed/erikw/restic-automatic-backup-scheduler?color=success)](https://github.com/erikw/restic-automatic-backup-scheduler/pulls?q=is%3Apr+is%3Aclosed)
+[![License](https://img.shields.io/badge/license-BSD--3-blue)](LICENSE)
+[![OSS Lifecycle](https://img.shields.io/osslifecycle/erikw/restic-automatic-backup-scheduler)](https://github.com/Netflix/osstracker)
+<br>
 
-**Note:**  This version has been extended from upstream (BackBlaze only) to work with SFTP.  The instructions below are not current.
+[![Contributors](https://img.shields.io/github/contributors/erikw/restic-automatic-backup-scheduler)](https://github.com/erikw/restic-automatic-backup-scheduler/graphs/contributors) including these top contributors:
+<a href = "https://github.com/erikw/restic-automatic-backup-scheduler/graphs/contributors">
+<img src = "https://contrib.rocks/image?repo=erikw/restic-automatic-backup-scheduler&max=24"/>
+</a>
 
+<<<<<<< HEAD
+Note, you can use any restic's supported [storage backends](https://restic.readthedocs.io/en/latest/030_preparing_a_new_repo.html). The setup should be similar but you will have to use other configuration variables to match your backend of choice.
+
+## Project Scope
+The scope for this is not to be a full-fledged super solution that solves all the problems and all possible setups. The aim is to be a hackable code base for you to start sewing up the perfect backup solution that fits your requirements!
+=======
+# Intro
+[restic](https://restic.net/) is a command-line tool for making backups, the right way. Check the official website for a feature explanation. As a storage backend, I recommend [Backblaze B2](https://www.backblaze.com/b2/cloud-storage.html) as restic works well with it, and it is (at the time of writing) very affordable for the hobbyist hacker! (anecdotal: I pay for my full-systems backups each month typically < 1 USD).
+
+Unfortunately restic does not come pre-configured with a way to run automated backups, say every day. However it's possible to set this up yourself using built-in tools in your OS and some wrappers. For Linux with systemd, it's convenient to use systemd timers. For macOS systems, we can use built-in LaunchAgents. For Windows we can use ScheduledTasks. Any OS having something cron-like will also work!
+>>>>>>> f1d48dceabd5468150b8fadc1ed435e967764075
+
+Nevertheless the project should work out of the box, be minimal but still open the doors for configuration and extensions by users.
+
+<<<<<<< HEAD
+=======
 Note, you can use any restic's supported [storage backends](https://restic.readthedocs.io/en/latest/030_preparing_a_new_repo.html). The setup should be similar but you will have to use other configuration variables to match your backend of choice.
 
 ## Project Scope
@@ -37,6 +72,7 @@ The scope for this is not to be a full-fledged super solution that solves all th
 
 Nevertheless the project should work out of the box, be minimal but still open the doors for configuration and extensions by users.
 
+>>>>>>> f1d48dceabd5468150b8fadc1ed435e967764075
 ## Notes
 * Tip: Navigate this document easily from the Section icon in the top left corner.
    ![README Sections](img/readme_sections.png)
