@@ -1,14 +1,14 @@
 [Unit]
 Description=Check restic backup external service for errors
 # Email on failure require special setup. See README.md
-OnFailure=status-email-user@%n.service
+#OnFailure=status-email-user@%n.service
 Conflicts=restic-backup.service
 # Prevent backup on unmetered connection. Needs special setup. See README.md.
-Requires=nm-unmetered-connection.service
+#Requires=nm-unmetered-connection.service
 
 [Service]
 Type=simple
 Nice=10
-# `systemd-cat` allows showing the restic output to the systemd journal
-ExecStart=bash -c 'source $INSTALL_PREFIX/etc/restic/%I.env.sh && $INSTALL_PREFIX/bin/restic_check.sh 2>&1 | systemd-cat'
-
+# pipefail: so that redirecting stderr from the script to systemd-cat does not hide the failed command from OnFailure above.
+# `systemd-cat`: allows showing the restic output to the systemd journal
+ExecStart=bash -c 'set -o pipefail; source $INSTALL_PREFIX/etc/restic/%I.env.sh && $INSTALL_PREFIX/bin/restic_check.sh 2>&1 | systemd-cat'
