@@ -5,8 +5,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [7.3.4] - 2022-04-29
+### Fixed
+- Backup stats notifications: fix issue where `restic snapshots --latest 2` will show more than two snapshots due to different backup paths used.
+
+## [7.3.3] - 2022-04-14
+### Fixed
+- Trying to fix broken Homebrew bottles due to GitHub API issues.
+
+## [7.3.2] - 2022-04-11
+### Fixed
+- Trying to fix broken Homebrew bottles
+
+## [7.3.1] - 2022-04-11
 ### Fixed
 - `resticw` is now a true wrapper in that it support `--` args to restic.
+- OnFailure no longer masked by the stderr redirect to systemd-cat. [#86](https://github.com/erikw/restic-automatic-backup-scheduler/pull/86)
 
 ## [7.3.0] - 2022-02-15
 ### Added

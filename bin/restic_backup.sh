@@ -28,7 +28,7 @@ assert_envvars() {
 	local varnames=("$@")
 	for varname in "${varnames[@]}"; do
 		if [ -z ${!varname+x} ]; then
-			printf "%s must be set for this script to work.\n\nDid you forget to source a /etc/restic/*.env.sh profile in the current shell before executing this script?\n" "$varname" >&2
+			printf "%s must be set for this script to work.\n\nDid you forget to source a $INSTALL_PREFIX/etc/restic/*.env.sh profile in the current shell before executing this script?\n" "$varname" >&2
 			exit 1
 		fi
 	done
@@ -115,6 +115,7 @@ if [ "$RESTIC_NOTIFY_BACKUP_STATS" = true ]; then
 		latest_snapshot_diff=$(restic snapshots --tag "$RESTIC_BACKUP_TAG" --latest 2 --compact \
 			| grep -Ei "^[abcdef0-9]{8} " \
 			| awk '{print $1}' \
+			| tail -2 \
 			| tr '\n' ' ' \
 			| xargs restic diff)
         added=$(echo "$latest_snapshot_diff" | grep -i 'added:' | awk '{print $2 " " $3}')
