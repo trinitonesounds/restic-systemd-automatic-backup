@@ -6,8 +6,6 @@ Documentation=https://restic.readthedocs.io/en/stable/
 # entering Failed state and sending a notification email
 StartLimitIntervalSec=1260
 StartLimitBurst=4
-# Email on failure require special setup. See README.md
-#OnFailure=status-email-user@%n.service
 
 # Prevent backup on unmetered connection. Needs special setup. See README.md.
 #Requires=nm-unmetered-connection.service
