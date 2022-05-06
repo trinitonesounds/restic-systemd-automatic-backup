@@ -397,7 +397,7 @@ You can see when your next backup is scheduled to run with
 
 and see the status of a currently running backup with:
 ```console
-# systemctl status restic-backup
+# systemctl status restic-backup@default
 ```
 
 or start a backup manually:
