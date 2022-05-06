@@ -19,7 +19,7 @@
 # SFTP Repository
 # Be sure to define an SSH config Host for "restic-sftp"
 export RESTIC_REPOSITORY="sftp:restic-sftp:/<repo-name>"  # *EDIT* fill with your repo name
-export RESTIC_PASSWORD_FILE="/etc/restic/restic_pw.txt"
+export RESTIC_PASSWORD_FILE="/etc/restic/pw.txt"
 
 # Backblaze B2 credentials keyID & applicationKey pair.
 # Restic environment variables are documented at https://restic.readthedocs.io/en/latest/040_backup.html#environment-variables
