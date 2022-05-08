@@ -83,12 +83,10 @@ DIR_SCHEDTASK	= ScheduledTask
 # Source files.
 SRCS_SCRIPT		= $(filter-out \
 						%cron_mail \
-						%systemd-email \
 						%nm-unmetered-connection.sh \
 					, $(wildcard $(DIR_SCRIPT)/*))
 SRCS_CONF		= $(wildcard $(DIR_CONF)/*)
 SRCS_SYSTEMD	= $(filter-out \
-						%status-email-user@.service \
 						%nm-unmetered-connection.service \
 					, $(wildcard $(DIR_SYSTEMD)/*))
 SRCS_CRON		= $(wildcard $(DIR_CRON)/*)
