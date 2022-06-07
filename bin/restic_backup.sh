@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Make a backup with restic to Backblaze B2.
+# Make a backup with restic to an external destination (Backblaze B2 or SFTP).
 #
 # This script is typically run (as root user) either like:
 # - from restic service/timer: $PREFIX/etc/systemd/system/restic-backup.{service,timer}
@@ -70,6 +70,18 @@ test "$OSTYPE" = msys || FS_ARG=--one-file-system
 restic unlock &
 wait $!
 
+# Special options
+#declare -A RESTIC_OPTIONS
+#for opt in B2_CONNECTIONS OTHER
+#do
+#    if [[ ${!opt:-notset} = "notset" ]]; then
+#        RESTIC_OPTIONS+=
+#    else
+#        RESTIC_OPTIONS+="--option ${!opt} "
+#    fi
+#done
+
+
 # Do the backup!
 # See restic-backup(1) or http://restic.readthedocs.io/en/latest/040_backup.html
 # --one-file-system makes sure we only backup exactly those mounted file systems specified in $RESTIC_BACKUP_PATHS, and thus not directories like /dev, /sys etc.
@@ -86,11 +98,14 @@ wait $!
 
 # Dereference and delete/prune old backups.
 # See restic-forget(1) or http://restic.readthedocs.io/en/latest/060_forget.html
-# --group-by only the tag and path, and not by hostname. This is because I create a B2 Bucket per host, and if this hostname accidentially change some time, there would now be multiple backup sets.
+# --group-by only the tag and path, and not by hostname. This is if you create a repo per host, and if the hostname accidentially change some time, there would now be multiple backup sets.
+    #--group-by "paths,tags" \
+    #    ${RESTIC_OPTIONS[*]}  \
 restic forget \
 	--verbose="$RESTIC_VERBOSITY_LEVEL" \
 	--tag "$RESTIC_BACKUP_TAG" \
 	--option b2.connections="$B2_CONNECTIONS" \
+    --host $HOSTNAME \
 	--prune \
 	--group-by "paths,tags" \
 	--keep-hourly "$RESTIC_RETENTION_HOURS" \

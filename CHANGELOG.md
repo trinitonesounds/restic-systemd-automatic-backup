@@ -5,9 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+<<<<<<< HEAD
 ### Added
 - Support saving hourly snapshots. [#98](https://github.com/erikw/restic-automatic-backup-scheduler/pull/98)
 
+=======
+>>>>>>> 811a5c3 (Full path /bin/bash in systemd services)
 ### Fixed
 - Full path to `/bin/bash` in sytemd services. [#96](https://github.com/erikw/restic-automatic-backup-scheduler/issues/96)
 

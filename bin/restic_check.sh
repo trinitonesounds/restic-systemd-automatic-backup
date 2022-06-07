@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Check the backups made with restic to Backblaze B2 for errors.
+# Check  for errors in the remote repository with "restic check".
 # See restic_backup.sh on how this script is run (as it's analogous for this script).
 
 # Exit on error, unset var, pipe failure
@@ -29,6 +29,17 @@ assert_envvars \
 	B2_ACCOUNT_ID B2_ACCOUNT_KEY B2_CONNECTIONS \
 	RESTIC_PASSWORD_FILE RESTIC_REPOSITORY RESTIC_VERBOSITY_LEVEL
 
+
+# Special options
+#declare -A RESTIC_OPTIONS
+#for opt in B2_CONNECTIONS OTHER
+#do
+#    if [[ ${!opt:-notset} = "notset" ]]; then
+#        RESTIC_OPTIONS+=
+#    else
+#        RESTIC_OPTIONS+="--option ${!opt} "
+#    fi
+#done
 
 # Remove locks from other stale processes to keep the automated backup running.
 # NOTE nope, don't unlock like restic_backup.sh. restic_backup.sh should take precedence over this script.
