@@ -36,6 +36,8 @@ The scope for this is not to be a full-fledged super solution that solves all th
 
 Nevertheless the project should work out of the box, be minimal but still open the doors for configuration and extensions by users.
 
+To use a different storage backend than B2, you should only need to tweak a few settings variables in the backup profile as well as some restic arguments inside `restic_backup.sh`.
+
 ## Notes
 * Tip: Navigate this document easily from the Section icon in the top left corner.
    ![README Sections](img/readme_sections.png)
@@ -434,8 +436,8 @@ To have different backup jobs having e.g. different buckets, backup path of sche
 To create a different backup and use you can do:
 ```console
 # cp /etc/restic/default.env.sh /etc/restic/other.env.sh
-# vim /etc/restic/default.other.sh  # Set backup path, bucket etc.
-# source /etc/restic/default.other.sh
+# vim /etc/restic/other.env.sh  # Set backup path, bucket etc.
+# source /etc/restic/other.env.sh
 # restic_backup.sh
 ```
 
@@ -496,6 +498,7 @@ For a laptop, it can make sense to not do heavy backups when your on a metered c
 1. Edit `restic-backup@.service` and `restic-check@.service` to require the new service to be in success state:
    ```
    Requires=nm-unmetered-connection.service
+   After=nm-unmetered-connection.service
    ```
 1. Copy and paste the command below, it will install the following files and refresh systemd daemon:
 1. Put this file in `/etc/systemd/system/`:
