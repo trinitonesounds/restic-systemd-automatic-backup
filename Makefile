@@ -215,7 +215,7 @@ $(DEST_DIR_CONF)/%: $(BUILD_DIR_CONF)/%
 $(DEST_DIR_SYSTEMD)/%: $(BUILD_DIR_SYSTEMD)/%
 	@${MKDIR_PARENTS} $@
 	mkdir -p $(DEST_DIR_CACHE)
-	install -m 0644 $< $@
+	install -m 0644 -b $(BAK_SUFFIX) $< $@
 
 # Install destination cron files.
 $(DEST_DIR_CRON)/%: $(BUILD_DIR_CRON)/%
