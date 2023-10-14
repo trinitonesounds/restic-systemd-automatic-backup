@@ -15,6 +15,7 @@
 [![License](https://img.shields.io/badge/license-BSD--3-blue)](LICENSE)
 [![OSS Lifecycle](https://img.shields.io/osslifecycle/erikw/restic-automatic-backup-scheduler)](https://github.com/Netflix/osstracker)
 [![SLOC](https://img.shields.io/tokei/lines/github/erikw/restic-automatic-backup-scheduler?logo=codefactor&logoColor=lightgrey)](#)
+[![Top programming languages used](https://img.shields.io/github/languages/top/erikw/restic-automatic-backup-scheduler)](#)
 <br>
 
 [![Contributors](https://img.shields.io/github/contributors/erikw/restic-automatic-backup-scheduler)](https://github.com/erikw/restic-automatic-backup-scheduler/graphs/contributors) including these top contributors:
@@ -402,7 +403,7 @@ You can see when your next backup is scheduled to run with
 
 and see the status of a currently running backup with:
 ```console
-# systemctl status restic-backup@default
+# systemctl status restic-backup
 ```
 
 or start a backup manually:

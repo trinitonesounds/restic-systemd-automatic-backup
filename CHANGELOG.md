@@ -6,7 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- Debug scripts by setting `TRACE=1`.
+### Changed
+- Warn on certain unset envvars instead of error-exit.
+
+## [7.4.0] - 2023-03-08
+### Added
 - Support saving hourly snapshots. [#98](https://github.com/erikw/restic-automatic-backup-scheduler/pull/98)
+- Support for pre backup script at /etc/restic/pre_backup.sh [107](https://github.com/erikw/restic-automatic-backup-scheduler/pull/107)
 
 ### Fixed
 - Full path to `/bin/bash` in sytemd services. [#96](https://github.com/erikw/restic-automatic-backup-scheduler/issues/96)
