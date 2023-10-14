@@ -10,7 +10,7 @@ StartLimitBurst=4
 # Prevent backup on unmetered connection. Needs special setup. See README.md.
 #Requires=nm-unmetered-connection.service
 Requires=local-fs.target
-Description=Backup with restic to Backblaze B2
+Description=Backup with restic to External Service
 # Email on failure require special setup. See README.md
 #OnFailure=status-email-user@%n.service
 # Prevent backup on unmetered connection. Needs special setup. See README.md.
