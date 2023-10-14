@@ -8,8 +8,9 @@
 #   $ source $PREFIX/etc/default.env.sh
 #   $ restic_backup.sh
 
-# Exit on error, unset var, pipe failure
-set -euo pipefail
+set -o errexit
+set -o pipefail
+[[ "${TRACE-0}" =~ ^1|t|y|true|yes$ ]] && set -o xtrace
 
 # Clean up lock if we are killed.
 # If killed by systemd, like $(systemctl stop restic), then it kills the whole cgroup and all it's subprocesses.
@@ -33,17 +34,45 @@ assert_envvars() {
 		fi
 	done
 }
-assert_envvars \
-	B2_ACCOUNT_ID B2_ACCOUNT_KEY B2_CONNECTIONS \
-	RESTIC_BACKUP_PATHS RESTIC_BACKUP_TAG \
-	RESTIC_BACKUP_EXCLUDE_FILE RESTIC_BACKUP_EXTRA_ARGS RESTIC_PASSWORD_FILE RESTIC_REPOSITORY RESTIC_VERBOSITY_LEVEL \
-	RESTIC_RETENTION_DAYS RESTIC_RETENTION_MONTHS RESTIC_RETENTION_WEEKS RESTIC_RETENTION_YEARS
 
+warn_on_missing_envvars() {
+	local unset_envs=()
+	local varnames=("$@")
+	for varname in "${varnames[@]}"; do
+		if [ -z "${!varname-}" ]; then
+			unset_envs=("${unset_envs[@]}" "$varname")
+		fi
+	done
+
+	if [ ${#unset_envs[@]} -gt 0 ]; then
+		printf "The following env variables are recommended, but have not been set. This script may not work as expected: %s\n" "${unset_envs[*]}" >&2
+	fi
+}
+
+assert_envvars \
+	RESTIC_BACKUP_PATHS RESTIC_BACKUP_TAG \
+	RESTIC_BACKUP_EXCLUDE_FILE RESTIC_BACKUP_EXTRA_ARGS RESTIC_REPOSITORY RESTIC_VERBOSITY_LEVEL \
+	RESTIC_RETENTION_HOURS RESTIC_RETENTION_DAYS RESTIC_RETENTION_MONTHS RESTIC_RETENTION_WEEKS RESTIC_RETENTION_YEARS
+
+warn_on_missing_envvars \
+	B2_ACCOUNT_ID B2_ACCOUNT_KEY B2_CONNECTIONS \
+	RESTIC_PASSWORD_FILE
 
 # Convert to arrays, as arrays should be used to build command lines. See https://github.com/koalaman/shellcheck/wiki/SC2086
 IFS=':' read -ra backup_paths <<< "$RESTIC_BACKUP_PATHS"
-IFS=' ' read -ra extra_args <<< "$RESTIC_BACKUP_EXTRA_ARGS"
 
+# Convert to array, an preserve spaces. See #111
+backup_extra_args=( )
+while IFS= read -r -d ''; do
+  backup_extra_args+=( "$REPLY" )
+done < <(xargs printf '%s\0' <<<"$RESTIC_BACKUP_EXTRA_ARGS")
+
+B2_ARG=
+[ -z "${B2_CONNECTIONS+x}" ] || B2_ARG=(--option b2.connections="$B2_CONNECTIONS")
+
+# If you need to run some commands before performing the backup; create this file, put them there and make the file executable.
+PRE_SCRIPT="${INSTALL_PREFIX}/etc/restic/pre_backup.sh"
+test -x "$PRE_SCRIPT" && "$PRE_SCRIPT"
 
 # Set up exclude files: global + path-specific ones
 # NOTE that restic will fail the backup if not all listed --exclude-files exist. Thus we should only list them if they are really all available.
@@ -78,9 +107,9 @@ restic backup \
 	--verbose="$RESTIC_VERBOSITY_LEVEL" \
 	$FS_ARG \
 	--tag "$RESTIC_BACKUP_TAG" \
-	--option b2.connections="$B2_CONNECTIONS" \
+	"${B2_ARG[@]}" \
 	"${exclusion_args[@]}" \
-	"${extra_args[@]}" \
+	"${backup_extra_args[@]}" \
 	"${backup_paths[@]}" &
 wait $!
 
@@ -90,7 +119,7 @@ wait $!
 restic forget \
 	--verbose="$RESTIC_VERBOSITY_LEVEL" \
 	--tag "$RESTIC_BACKUP_TAG" \
-	--option b2.connections="$B2_CONNECTIONS" \
+	"${B2_ARG[@]}" \
 	--prune \
 	--group-by "paths,tags" \
 	--keep-hourly "$RESTIC_RETENTION_HOURS" \
