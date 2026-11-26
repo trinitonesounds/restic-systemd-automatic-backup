@@ -2,7 +2,7 @@
 id: 633e4d42-2b70-4f5f-b855-2193788c0a4b
 title: "Find and fix the unreadable file on ch-hvz-2"
 type: issue
-status: ready-for-human
+status: done
 blocked_by:
   - 01-no-empty-backup-target.md
 date: 2026-11-25
@@ -17,9 +17,9 @@ Context: on 2026-11-25 several hosts sharing one restic repo looped for hours (r
 
 ## Acceptance criteria
 
-- [ ] The unreadable path(s) and the cause are recorded under Comments
-- [ ] A manual `systemctl start restic-backup@default` on ch-hvz-2 exits 0
-- [ ] Other hosts' journals are checked for the same warning and noted
+- [x] The unreadable path(s) and the cause are recorded under Comments
+- [x] A manual `systemctl start restic-backup@default` on ch-hvz-2 exits 0
+- [x] Other hosts' journals are checked for the same warning and noted
 
 ## Comments
 
@@ -42,3 +42,11 @@ Context: on 2026-11-25 several hosts sharing one restic repo looped for hours (r
 ### 2026-11-25: unblocked
 
 Ticket 01 is done (the fix is verified against restic 0.19.1). What remains for this ticket: deploy the fixed `restic_backup.sh` to ch-hvz-2 (and the other 0.19+/0.20 hosts), re-enable the timer, and confirm a manual run exits 0.
+
+### 2026-11-25: deployed on ch-hvz-2
+
+The maintainer pulled 9f85cf1 and ran `make install-targets-script` by hand (the Salt `git.latest` deploy key is rejected by GitHub). `/bin/restic_backup.sh` md5 is `41c51106…` as expected. The verification run is on hold until restic-01 is repaired (see ticket 06): with the repo damaged, the script's `forget --prune` fails and would restart the loop.
+
+### 2026-11-26: verified, closed
+
+After restic-01 was repaired and pruned (ticket 06), `systemctl start restic-backup@default.service` on ch-hvz-2 (restic 0.20.0, script md5 `41c51106…`) finished with `Result=success`, `ExecMainStatus=0`, `NRestarts=0`. The journal has no ` does not exist` or `could not be read` lines. Snapshot `e1a7120a` was saved, forget kept 27 and removed 2, and prune ran to "Backup & cleaning is done." The timer on ch-hvz-2 is still disabled; the maintainer re-enables it.
