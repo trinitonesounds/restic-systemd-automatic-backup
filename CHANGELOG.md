@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Debug scripts by setting `TRACE=1`.
 ### Changed
 - Warn on certain unset envvars instead of error-exit.
+### Fixed
+- Never pass an empty-string argument to restic. On restic 0.19+, an empty `RESTIC_BACKUP_EXTRA_ARGS` (the default), an empty `RESTIC_BACKUP_PATHS` entry or an unset `B2_CONNECTIONS` made `restic backup` exit 3, so forget never ran and the systemd unit looped through restarts, saving a snapshot each time.
 
 ## [7.4.0] - 2023-03-08
 ### Added

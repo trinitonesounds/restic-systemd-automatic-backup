@@ -59,16 +59,22 @@ warn_on_missing_envvars \
 	RESTIC_PASSWORD_FILE
 
 # Convert to arrays, as arrays should be used to build command lines. See https://github.com/koalaman/shellcheck/wiki/SC2086
-IFS=':' read -ra backup_paths <<< "$RESTIC_BACKUP_PATHS"
-IFS=' ' read -ra extra_args <<< "$RESTIC_BACKUP_EXTRA_ARGS"
+# Never pass an empty-string argument: since restic 0.19 it is a missing backup
+# target and makes `restic backup` exit 3. So empty path entries (e.g. "/a::/b")
+# are dropped, and `xargs -r` skips the printf when the extra args are empty or
+# only whitespace. Extra args keep quoted values containing spaces. See #111
+IFS=':' read -ra all_backup_paths <<< "$RESTIC_BACKUP_PATHS"
+backup_paths=( )
+for backup_path in "${all_backup_paths[@]}"; do
+	[ -n "$backup_path" ] && backup_paths+=( "$backup_path" )
+done
 
-# Convert to array, an preserve spaces. See #111
 backup_extra_args=( )
 while IFS= read -r -d ''; do
-  backup_extra_args+=( "$REPLY" )
-done < <(xargs printf '%s\0' <<<"$RESTIC_BACKUP_EXTRA_ARGS")
+	backup_extra_args+=( "$REPLY" )
+done < <(xargs -r printf '%s\0' <<<"$RESTIC_BACKUP_EXTRA_ARGS")
 
-B2_ARG=
+B2_ARG=( )
 [ -z "${B2_CONNECTIONS+x}" ] || B2_ARG=(--option b2.connections="$B2_CONNECTIONS")
 
 # If you need to run some commands before performing the backup; create this file, put them there and make the file executable.
@@ -135,7 +141,7 @@ restic forget \
 	--verbose="$RESTIC_VERBOSITY_LEVEL" \
 	--tag "$RESTIC_BACKUP_TAG" \
 	"${B2_ARG[@]}" \
-    --host $HOSTNAME \
+	--host "$HOSTNAME" \
 	--prune \
 	--group-by "paths,tags" \
 	--keep-hourly "$RESTIC_RETENTION_HOURS" \
