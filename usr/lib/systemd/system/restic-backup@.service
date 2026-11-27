@@ -1,16 +1,23 @@
 [Unit]
-Description=Backup with restic to external service
+Description=Backup with restic to External Service
 Documentation=man:restic(1)
 Documentation=https://restic.readthedocs.io/en/stable/
-# If the backup fails, retry every 5 minutes for 4 tries (20 minutes) beforre
-# entering Failed state and sending a notification email
-StartLimitIntervalSec=1260
-StartLimitBurst=4
-
-# Prevent backup on unmetered connection. Needs special setup. See README.md.
-#Requires=nm-unmetered-connection.service
+# Retry limit: a failing backup gets at most 3 attempts (the first run plus 2
+# restarts, see Restart= below), then the unit stays failed. NRestarts then
+# reads 3, because systemd also counts the refused restart. systemd counts every
+# start inside the window, so the window must outlast all the attempts:
+#   attempts x (RestartSec + random start delay in ExecStart + longest run)
+#   = 3 x (5 min + 5 min + 60 min) = 210 min, rounded up to 4 h.
+# The 60 min is an assumption. If a run can take longer, raise the window to
+# match, or the limit never triggers and the unit retries forever.
+# Successful runs count too. A timer that fires more than 3 times in any 4 h is
+# refused even when every backup succeeds, so the backup timer should fire at
+# most every 80 min (the shipped timer runs daily). After the limit is hit,
+# timer runs are refused until the 4 h window has passed. To retry sooner, run
+# `systemctl reset-failed restic-backup@<profile>`.
+StartLimitIntervalSec=4h
+StartLimitBurst=3
 Requires=local-fs.target
-Description=Backup with restic to External Service
 # Email on failure require special setup. See README.md
 #OnFailure=status-email-user@%n.service
 # Prevent backup on unmetered connection. Needs special setup. See README.md.
@@ -25,10 +32,15 @@ Environment="RESTIC_CACHE_DIR=/var/cache/restic"
 Environment="HOME=/root"
 
 # pipefail: so that redirecting stderr from the script to systemd-cat does not hide the failed command from OnFailure above.
-# Random sleep (in seconds): in the case of multiple backup profiles. Many restic instances started at the same time could case high load or network bandwith usage.
+# Random sleep (in seconds): in the case of multiple backup profiles. Many restic instances started at the same time could case high load or network bandwidth usage.
 # `systemd-cat` allows showing the restic output to the systemd journal
-ExecStart=/bin/bash -c 'set -o pipefail; ps cax | grep -q restic && sleep $(shuf -i 0-300 -n 1); source $INSTALL_PREFIX/etc/restic/%I.env.sh && $INSTALL_PREFIX/bin/restic_backup.sh 2>&1 | systemd-cat'
+ExecStart=/bin/bash -c 'set -o pipefail; ps cax | grep -q restic && sleep $(shuf -i 0-300 -n 1); source {{ INSTALL_PREFIX }}/etc/restic/%I.env.sh && {{ INSTALL_PREFIX }}/bin/restic_backup.sh 2>&1 | systemd-cat'
 Restart=on-failure
+# Exit 3 = snapshot saved, but some files could not be read. Retrying would only
+# add another partial snapshot, so fail without restarting (OnFailure= still
+# fires, if enabled above). The script runs forget before exiting 3.
+RestartPreventExitStatus=3
+# RestartSec and the sleep in ExecStart feed the retry-limit arithmetic in [Unit].
 RestartSec=300
 
 
@@ -38,7 +50,6 @@ ProtectHome=read-only
 ProtectSystem=full
 ProtectKernelModules=true
 ProtectKernelTunables=true
-ProtectControlGroups=true
 ProtectControlGroups=true
 PrivateDevices=true
 MemoryDenyWriteExecute=true

@@ -29,7 +29,7 @@ assert_envvars() {
 	local varnames=("$@")
 	for varname in "${varnames[@]}"; do
 		if [ -z ${!varname+x} ]; then
-			printf "%s must be set for this script to work.\n\nDid you forget to source a $INSTALL_PREFIX/etc/restic/*.env.sh profile in the current shell before executing this script?\n" "$varname" >&2
+			printf "%s must be set for this script to work.\n\nDid you forget to source a {{ INSTALL_PREFIX }}/etc/restic/*.env.sh profile in the current shell before executing this script?\n" "$varname" >&2
 			exit 1
 		fi
 	done
@@ -48,6 +48,30 @@ warn_on_missing_envvars() {
 		printf "The following env variables are recommended, but have not been set. This script may not work as expected: %s\n" "${unset_envs[*]}" >&2
 	fi
 }
+
+# Log the backup summary stats to a CSV file
+logBackupStatsCsv() {
+	local snapId="$1" added="$2" removed="$3" snapSize="$4"
+	local logFile
+	logFile="${RESTIC_BACKUP_STATS_DIR}/$(date '+%Y')-stats.log.csv"
+	test -e "$logFile" || install -D -m 0644 <(echo "Date, Snapshot ID, Added, Removed, Snapshot size") "$logFile"
+	# DEV-NOTE: using `ex` due `sed` inconsistencies (GNU vs. BSD) and `awk` cannot edit in-place. `ex` does a good job
+	printf '1a\n%s\n.\nwq\n' "$(date '+%F %H:%M:%S'), ${snapId}, ${added}, ${removed}, ${snapSize}" | ex "$logFile"
+}
+
+# Notify the backup summary stats to the user
+notifyBackupStats() {
+	local statsMsg="$1"
+	if [ -w "$RESTIC_BACKUP_NOTIFICATION_FILE" ]; then
+		echo "$statsMsg" >> "$RESTIC_BACKUP_NOTIFICATION_FILE"
+	else
+		echo "[WARN] Couldn't write to the backup notification file. File not found or not writable: ${RESTIC_BACKUP_NOTIFICATION_FILE}"
+	fi
+}
+
+# ------------
+# === Main ===
+# ------------
 
 assert_envvars \
 	RESTIC_BACKUP_PATHS RESTIC_BACKUP_TAG \
@@ -78,7 +102,7 @@ B2_ARG=( )
 [ -z "${B2_CONNECTIONS+x}" ] || B2_ARG=(--option b2.connections="$B2_CONNECTIONS")
 
 # If you need to run some commands before performing the backup; create this file, put them there and make the file executable.
-PRE_SCRIPT="${INSTALL_PREFIX}/etc/restic/pre_backup.sh"
+PRE_SCRIPT="{{ INSTALL_PREFIX }}/etc/restic/pre_backup.sh"
 test -x "$PRE_SCRIPT" && "$PRE_SCRIPT"
 
 # Set up exclude files: global + path-specific ones
@@ -93,7 +117,7 @@ for backup_path in "${backup_paths[@]}"; do
 	fi
 done
 
-# --one-file-system is not supportd on Windows (=msys).
+# --one-file-system is not supported on Windows (=msys).
 FS_ARG=
 test "$OSTYPE" = msys || FS_ARG=--one-file-system
 
@@ -130,19 +154,33 @@ restic backup \
 	"${exclusion_args[@]}" \
 	"${backup_extra_args[@]}" \
 	"${backup_paths[@]}" &
-wait $!
+# restic exit 3: the snapshot was saved, but some source files could not be read.
+# That is still a completed backup, so run forget as usual and exit 3 at the end
+# (the unit's RestartPreventExitStatus=3 explains why). Any other failure stops here.
+RESTIC_EXIT_PARTIAL_SNAPSHOT=3
+deferred_exit_status=0
+backup_status=0
+wait $! || backup_status=$?
+if [ "$backup_status" -eq "$RESTIC_EXIT_PARTIAL_SNAPSHOT" ]; then
+	echo "[WARN] Snapshot saved but incomplete: at least one source file could not be read (restic exit 3). Continuing with forget; the run will end with exit 3." >&2
+	deferred_exit_status=$backup_status
+elif [ "$backup_status" -ne 0 ]; then
+	exit "$backup_status"
+fi
 
-# Dereference and delete/prune old backups.
+# Dereference old backups of this host and tag. Pruning (freeing the data)
+# needs an exclusive lock on the repository, so it is not done here: it runs
+# from restic-prune@<profile>.timer on one host per repository.
+# forget still needs an exclusive lock, so with a shared repository it waits
+# (--retry-lock) for other hosts' backups to finish instead of failing.
 # See restic-forget(1) or http://restic.readthedocs.io/en/latest/060_forget.html
-# --group-by only the tag and path, and not by hostname. This is if you create a repo per host, and if the hostname accidentially change some time, there would now be multiple backup sets.
-    #--group-by "paths,tags" \
-    #    ${RESTIC_OPTIONS[*]}  \
+# --group-by only the tag and path, and not by hostname. This is if you create a repo per host, and if the hostname accidentally change some time, there would now be multiple backup sets.
 restic forget \
 	--verbose="$RESTIC_VERBOSITY_LEVEL" \
 	--tag "$RESTIC_BACKUP_TAG" \
 	"${B2_ARG[@]}" \
 	--host "$HOSTNAME" \
-	--prune \
+	--retry-lock 30m \
 	--group-by "paths,tags" \
 	--keep-hourly "$RESTIC_RETENTION_HOURS" \
 	--keep-daily "$RESTIC_RETENTION_DAYS" \
@@ -158,23 +196,32 @@ wait $!
 
 echo "Backup & cleaning is done."
 
-# (optionally) Notify about backup summary stats.
-if [ "$RESTIC_NOTIFY_BACKUP_STATS" = true ]; then
-	if [ -w "$RESTIC_BACKUP_NOTIFICATION_FILE" ]; then
-		echo 'Notifications are enabled: Silently computing backup summary stats...'
+# (optional) Compute backup summary stats
+if [[ -n "$RESTIC_BACKUP_STATS_DIR" || -n "$RESTIC_BACKUP_NOTIFICATION_FILE" ]]; then
+	echo 'Silently computing backup summary stats...'
+	latest_snapshots=$(restic snapshots --tag "$RESTIC_BACKUP_TAG" --latest 2 --compact \
+		| grep -Ei "^[abcdef0-9]{8} " \
+		| awk '{print $1}' \
+		| tail -2 \
+		| tr '\n' ' ')
 
-		snapshot_size=$(restic stats latest --tag "$RESTIC_BACKUP_TAG" | grep -i 'total size:' | cut -d ':' -f2 | xargs)  # xargs acts as trim
-		latest_snapshot_diff=$(restic snapshots --tag "$RESTIC_BACKUP_TAG" --latest 2 --compact \
-			| grep -Ei "^[abcdef0-9]{8} " \
-			| awk '{print $1}' \
-			| tail -2 \
-			| tr '\n' ' ' \
-			| xargs restic diff)
-        added=$(echo "$latest_snapshot_diff" | grep -i 'added:' | awk '{print $2 " " $3}')
-        removed=$(echo "$latest_snapshot_diff" | grep -i 'removed:' | awk '{print $2 " " $3}')
-
-		echo "Added: ${added}. Removed: ${removed}. Snap size: ${snapshot_size}" >> "$RESTIC_BACKUP_NOTIFICATION_FILE"
+	# IDs are space-separated (tr flattened the list), so count words, not lines. BSD wc pads the count; xargs trims.
+	snapshot_count=$(echo "$latest_snapshots" | wc -w | xargs)
+	if [[ $snapshot_count -lt 2 ]]; then
+		echo "Warning: $snapshot_count snapshot(s) found. Skipping diff stats (need at least 2 snapshots)."
 	else
-		echo "[WARN] Couldn't write the backup summary stats. File not found or not writable: ${RESTIC_BACKUP_NOTIFICATION_FILE}"
+		latest_snapshot_diff=$(echo "$latest_snapshots" | xargs restic diff)
+		added=$(echo "$latest_snapshot_diff" | grep -i 'added:' | awk '{print $2 " " $3}')
+		removed=$(echo "$latest_snapshot_diff" | grep -i 'removed:' | awk '{print $2 " " $3}')
+		snapshot_size=$(restic stats latest --tag "$RESTIC_BACKUP_TAG" | grep -i 'total size:' | cut -d ':' -f2 | xargs)  # xargs acts as trim
+		snapshotId=$(echo "$latest_snapshots" | cut -d ' ' -f2)
+		statsMsg="Added: ${added}. Removed: ${removed}. Snap size: ${snapshot_size}"
+
+		echo "$statsMsg"
+		test -n "$RESTIC_BACKUP_STATS_DIR"         && logBackupStatsCsv "$snapshotId" "$added" "$removed" "$snapshot_size"
+		test -n "$RESTIC_BACKUP_NOTIFICATION_FILE" && notifyBackupStats "$statsMsg"
 	fi
 fi
+
+# Partial snapshot: exit 3 only now, after forget has run (see the backup step).
+[ "$deferred_exit_status" -eq 0 ] || exit "$deferred_exit_status"

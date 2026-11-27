@@ -8,7 +8,7 @@ Bash scripts plus OS scheduler definitions that run `restic` backups on a timer:
 
 Fork differences from upstream worth knowing before editing:
 - The default repository is SFTP (`sftp:restic-sftp:/<repo-name>`, which needs an SSH config `Host restic-sftp`), not B2. The B2 variables remain as fallbacks.
-- `restic forget` in `bin/restic_backup.sh` adds `--host $HOSTNAME` and `--group-by "paths,tags"`, and keeps hourly snapshots (`RESTIC_RETENTION_HOURS`).
+- `restic forget` in `bin/restic_backup.sh` adds `--host $HOSTNAME`, `--group-by "paths,tags"` and `--retry-lock`, keeps hourly snapshots (`RESTIC_RETENTION_HOURS`), and does not prune. Pruning is a separate `restic-prune@` unit, enabled on one host per shared repository.
 - `restic-backup@.service` uses `StartLimit*` plus `Restart=on-failure` for retries, systemd security hardening (`ProtectSystem`, `ReadWritePaths=/var/cache/restic`, …), and `RESTIC_CACHE_DIR=/var/cache/restic`. `make install-systemd` creates that cache dir.
 
 ## Commands
@@ -23,18 +23,18 @@ There is no test suite. Validation is:
 
 ## Architecture
 
-**Install pipeline (Makefile).** Sources mirror their install paths (`bin/`, `etc/restic/`, `usr/lib/systemd/system/`, `etc/cron.d/`, `Library/LaunchAgents/`). `make` copies each file into `build/<same path>`, replaces the literal string `$INSTALL_PREFIX` with `$(INSTALL_PREFIX)` (which defaults to `$PREFIX`), then `install`s into `$PREFIX/<path>`. So:
-- Any source file that references another installed file must use the literal `$INSTALL_PREFIX` placeholder, never a hardcoded `/etc/...` or `/bin/...` path.
+**Install pipeline (Makefile).** Sources mirror their install paths (`bin/`, `etc/restic/`, `usr/lib/systemd/system/`, `etc/cron.d/`, `Library/LaunchAgents/`). `make` copies each file into `build/<same path>`, replaces the literal string `{{ INSTALL_PREFIX }}` with `$(INSTALL_PREFIX)` (which defaults to `$PREFIX`), then `install`s into `$PREFIX/<path>`. So:
+- Any source file that references another installed file must use the literal `{{ INSTALL_PREFIX }}` placeholder, never a hardcoded `/etc/...` or `/bin/...` path.
 - `build/` is gitignored output. Edit the source tree, not `build/`.
 - Config installs (`etc/restic/*`) back up existing files with a timestamped `.bak` suffix (GNU vs BSD `install` flags are handled).
 - `SRCS_SCRIPT`/`SRCS_SYSTEMD` use `filter-out` to exclude optional files (`cron_mail`, `systemd-email`, `nm-unmetered-connection.*`, `status-email-user@.service`). New optional files must be added there too, or they get installed by default.
 
 **Profiles = env files.** All runtime configuration is environment variables. `etc/restic/<profile>.env.sh` sources `_global.env.sh` first, then overrides it. Each scheduler selects a profile by name:
-- systemd: template units `restic-backup@<profile>` and `restic-check@<profile>`. `ExecStart` sources `$INSTALL_PREFIX/etc/restic/%I.env.sh` and then runs the script, piped to `systemd-cat`.
+- systemd: template units `restic-backup@<profile>` and `restic-check@<profile>`. `ExecStart` sources `{{ INSTALL_PREFIX }}/etc/restic/%I.env.sh` and then runs the script, piped to `systemd-cat`.
 - cron, LaunchAgent and ScheduledTask hardcode the `default` profile.
 - `bin/resticw --profile X <restic args>` sources a profile and runs plain `restic` commands.
 
-**Scripts.** `bin/restic_backup.sh` runs `restic unlock`, `backup`, then `forget --prune`. `bin/restic_check.sh` runs `restic check`. Both `assert_envvars` the required variables and warn about missing recommended ones. Every restic call is started in the background and followed by `wait $!`, so the `INT`/`TERM` trap can kill children and `restic unlock`. Keep that pattern for any new restic call. Other behavior: path lists in `RESTIC_BACKUP_PATHS` are colon-separated; a per-path `<path>/.backup_exclude.txt` is picked up automatically; an executable `etc/restic/pre_backup.sh` runs before each backup if it exists; `--one-file-system` is skipped on Windows (`msys`).
+**Scripts.** `bin/restic_backup.sh` runs `restic unlock`, `backup`, then `forget` (scoped to its host and tag, no prune). `bin/restic_prune.sh` runs `restic prune` from `restic-prune@<profile>.timer`, which is installed but enabled on only one host per repository. `bin/restic_check.sh` runs `restic check`. Both `assert_envvars` the required variables and warn about missing recommended ones. Every restic call is started in the background and followed by `wait $!`, so the `INT`/`TERM` trap can kill children and `restic unlock`. Keep that pattern for any new restic call. Other behavior: path lists in `RESTIC_BACKUP_PATHS` are colon-separated; a per-path `<path>/.backup_exclude.txt` is picked up automatically; an executable `etc/restic/pre_backup.sh` runs before each backup if it exists; `--one-file-system` is skipped on Windows (`msys`).
 
 **`bin/resticw`** has a docopt.sh-generated parser that is hash-checked against the `DOC` string. If you change `DOC`, regenerate it with `docopt.sh bin/resticw`. The README's path for this (`usr/local/bin/resticw`) is outdated.
 
