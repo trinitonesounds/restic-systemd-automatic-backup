@@ -21,7 +21,7 @@ assert_envvars() {
 	local varnames=("$@")
 	for varname in "${varnames[@]}"; do
 		if [ -z ${!varname+x} ]; then
-			printf "%s must be set for this script to work.\n\nDid you forget to source a $INSTALL_PREFIX/etc/restic/*.env.sh profile in the current shell before executing this script?\n" "$varname" >&2
+			printf "%s must be set for this script to work.\n\nDid you forget to source a {{ INSTALL_PREFIX }}/etc/restic/*.env.sh profile in the current shell before executing this script?\n" "$varname" >&2
 			exit 1
 		fi
 	done
@@ -56,7 +56,7 @@ B2_ARG=
 #wait $!
 
 # Check repository for errors.
-echo restic check \
+restic check \
 	"${B2_ARG[@]}" \
 	--verbose="$RESTIC_VERBOSITY_LEVEL" &
 wait $!
