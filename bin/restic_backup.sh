@@ -130,7 +130,19 @@ restic backup \
 	"${exclusion_args[@]}" \
 	"${backup_extra_args[@]}" \
 	"${backup_paths[@]}" &
-wait $!
+# restic exit 3: the snapshot was saved, but some source files could not be read.
+# That is still a completed backup, so run forget as usual and exit 3 at the end
+# (the unit's RestartPreventExitStatus=3 explains why). Any other failure stops here.
+RESTIC_EXIT_PARTIAL_SNAPSHOT=3
+deferred_exit_status=0
+backup_status=0
+wait $! || backup_status=$?
+if [ "$backup_status" -eq "$RESTIC_EXIT_PARTIAL_SNAPSHOT" ]; then
+	echo "[WARN] Snapshot saved but incomplete: at least one source file could not be read (restic exit 3). Continuing with forget; the run will end with exit 3." >&2
+	deferred_exit_status=$backup_status
+elif [ "$backup_status" -ne 0 ]; then
+	exit "$backup_status"
+fi
 
 # Dereference and delete/prune old backups.
 # See restic-forget(1) or http://restic.readthedocs.io/en/latest/060_forget.html
@@ -178,3 +190,6 @@ if [ "$RESTIC_NOTIFY_BACKUP_STATS" = true ]; then
 		echo "[WARN] Couldn't write the backup summary stats. File not found or not writable: ${RESTIC_BACKUP_NOTIFICATION_FILE}"
 	fi
 fi
+
+# Partial snapshot: exit 3 only now, after forget has run (see the backup step).
+[ "$deferred_exit_status" -eq 0 ] || exit "$deferred_exit_status"

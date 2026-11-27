@@ -29,6 +29,10 @@ Environment="HOME=/root"
 # `systemd-cat` allows showing the restic output to the systemd journal
 ExecStart=/bin/bash -c 'set -o pipefail; ps cax | grep -q restic && sleep $(shuf -i 0-300 -n 1); source $INSTALL_PREFIX/etc/restic/%I.env.sh && $INSTALL_PREFIX/bin/restic_backup.sh 2>&1 | systemd-cat'
 Restart=on-failure
+# Exit 3 = snapshot saved, but some files could not be read. Retrying would only
+# add another partial snapshot, so fail without restarting (OnFailure= still
+# fires, if enabled above). The script runs forget before exiting 3.
+RestartPreventExitStatus=3
 RestartSec=300
 
 
