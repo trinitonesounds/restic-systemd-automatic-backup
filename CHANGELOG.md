@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Warn on certain unset envvars instead of error-exit.
 - A backup where restic saves the snapshot but can't read some files (exit 3) is now treated as completed: `restic_backup.sh` logs a warning, still runs forget, then exits 3. `restic-backup@.service` no longer restarts on exit 3 (`RestartPreventExitStatus=3`), so the unit fails visibly without piling up partial snapshots. Other failures still stop before forget and retry.
+- `restic-backup@.service` retry limit now works: a failing backup gets at most 3 attempts (`StartLimitBurst=3` in a 4 h window, sized for runs up to 60 min), then stays failed until the window has passed. The old 4-in-21-min limit never triggered because each attempt took longer than the window. Successful runs count too, so the backup timer should fire at most every 80 min. Also removed duplicate `Description=`, `nm-unmetered` and `ProtectControlGroups=` lines.
 ### Fixed
 - Never pass an empty-string argument to restic. On restic 0.19+, an empty `RESTIC_BACKUP_EXTRA_ARGS` (the default), an empty `RESTIC_BACKUP_PATHS` entry or an unset `B2_CONNECTIONS` made `restic backup` exit 3, so forget never ran and the systemd unit looped through restarts, saving a snapshot each time.
 
