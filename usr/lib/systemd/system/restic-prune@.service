@@ -1,0 +1,41 @@
+[Unit]
+Description=Prune restic repository of unreferenced data
+Documentation=man:restic(1)
+Documentation=https://restic.readthedocs.io/en/stable/
+# Retry limit, same approach as restic-backup@.service: at most 3 attempts (the
+# first run plus 2 restarts), then the unit stays failed. The window must
+# outlast all attempts:
+#   attempts x (RestartSec + longest run) = 3 x (5 min + 60 min) = 195 min,
+#   rounded up to 4 h.
+# A prune on a large repo can run longer than 60 min. If so, raise the window to
+# match, or the limit never triggers.
+StartLimitIntervalSec=4h
+StartLimitBurst=3
+Requires=local-fs.target
+# Email on failure require special setup. See README.md
+#OnFailure=status-email-user@%n.service
+
+[Service]
+Type=simple
+Nice=10
+# The cache lives in a systemd-managed directory, so it is writable even when a
+# drop-in runs this unit as another user (see "Shared repository" in README.md).
+CacheDirectory=restic-prune
+Environment="RESTIC_CACHE_DIR=%C/restic-prune"
+
+# pipefail: so that redirecting stderr from the script to systemd-cat does not hide the failed command from OnFailure above.
+# `systemd-cat` allows showing the restic output to the systemd journal
+ExecStart=/bin/bash -c 'set -o pipefail; source $INSTALL_PREFIX/etc/restic/%I.env.sh && $INSTALL_PREFIX/bin/restic_prune.sh 2>&1 | systemd-cat'
+Restart=on-failure
+# RestartSec feeds the retry-limit arithmetic in [Unit].
+RestartSec=300
+
+# Security hardening (see man 5 systemd.exec)
+PrivateTmp=true
+ProtectHome=read-only
+ProtectSystem=full
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+PrivateDevices=true
+MemoryDenyWriteExecute=true

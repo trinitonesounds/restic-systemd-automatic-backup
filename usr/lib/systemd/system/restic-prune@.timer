@@ -1,0 +1,11 @@
+[Unit]
+Description=Prune restic repository on a schedule
+
+[Timer]
+# Weekly, away from the nightly backups. Enable on one host per repository only.
+OnCalendar=Sun *-*-* 05:00:00
+RandomizedDelaySec=600
+Persistent=true
+
+[Install]
+WantedBy=timers.target

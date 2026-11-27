@@ -103,6 +103,10 @@ Many Linux distributions nowadays use [Systemd](https://en.wikipedia.org/wiki/Sy
    ```console
    # systemctl enable --now restic-check@default.timer
    ````
+1. Enable the prune job, which frees the space of snapshots removed by the backups' retention policy. Backups no longer prune themselves. With one repository per host, enable it on that host. If several hosts share one repository, enable it on **one** of them only; see [Shared repository](#optional-shared-repository-across-hosts).
+   ```console
+   # systemctl enable --now restic-prune@default.timer
+   ```
 1. (optional) Define multiple profiles: just make a copy of the `default.env.sh` and use the defined profile name in place of `default` to run backups or enable timers. Notice that the value after `@` works as a parameter.
    ```console
    # systemctl enable restic-backup@other_profile.timer
@@ -430,6 +434,27 @@ There is companion scripts, service and timer (`*check*`) to restic-backup.sh th
 
 ## Optional Features
 <img height="64" width="64" src="img/plus.png" />
+
+### Optional: Shared repository across hosts
+Several hosts can back up into one repository, which deduplicates data across them. Each host's backup applies the retention policy only to its own snapshots (`restic forget --host <hostname> --tag <tag>`), and never prunes. Pruning takes an exclusive lock on the whole repository, so it runs from `restic-prune@<profile>.timer` on exactly one host. By default it runs weekly on Sunday at 05:00, away from the nightly backups; override `OnCalendar` with a drop-in if needed.
+
+1. Pick the prune host. The host that stores the repository locally prunes fastest.
+1. On that host, create a profile pointing at the repository and enable the timer there only:
+   ```console
+   # systemctl enable --now restic-prune@<profile>.timer
+   ```
+1. If the repository is served to the other hosts over SFTP as a dedicated user, run the prune as that user. A prune as root leaves root-owned files the SFTP user cannot read, and every other host's backup then fails with "permission denied". Add a drop-in:
+   ```console
+   # systemctl edit restic-prune@<profile>.service
+   ```
+   ```ini
+   [Service]
+   User=<sftp-user>
+   ```
+   That user must be able to read the profile's env file, the files it sources and its password file (for example: group-owned by that user's group, mode 0640). The prune unit's cache is a systemd-managed directory, so it works for any user, unless the profile sets its own `RESTIC_CACHE_DIR`, which then must be writable by that user too.
+1. The prune unit's hardening makes `/home` read-only (`ProtectHome=read-only`). If the repository lives under `/home`, add `ReadWritePaths=<repository path>` to the same drop-in.
+
+`forget` and `prune` both need an exclusive lock on the repository, so they wait up to 30 minutes (`--retry-lock`) for other hosts' running backups instead of failing. This needs restic 0.16 or newer.
 
 ### Optional: Multiple profiles
 To have different backup jobs having e.g. different buckets, backup path of schedule,  just make a copy of the `default.env.sh` and use the defined profile name in place of `default` in the previous steps.

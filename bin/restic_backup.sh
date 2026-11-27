@@ -144,7 +144,11 @@ elif [ "$backup_status" -ne 0 ]; then
 	exit "$backup_status"
 fi
 
-# Dereference and delete/prune old backups.
+# Dereference old backups of this host and tag. Pruning (freeing the data)
+# needs an exclusive lock on the repository, so it is not done here: it runs
+# from restic-prune@<profile>.timer on one host per repository.
+# forget still needs an exclusive lock, so with a shared repository it waits
+# (--retry-lock) for other hosts' backups to finish instead of failing.
 # See restic-forget(1) or http://restic.readthedocs.io/en/latest/060_forget.html
 # --group-by only the tag and path, and not by hostname. This is if you create a repo per host, and if the hostname accidentially change some time, there would now be multiple backup sets.
     #--group-by "paths,tags" \
@@ -154,7 +158,7 @@ restic forget \
 	--tag "$RESTIC_BACKUP_TAG" \
 	"${B2_ARG[@]}" \
 	--host "$HOSTNAME" \
-	--prune \
+	--retry-lock 30m \
 	--group-by "paths,tags" \
 	--keep-hourly "$RESTIC_RETENTION_HOURS" \
 	--keep-daily "$RESTIC_RETENTION_DAYS" \
