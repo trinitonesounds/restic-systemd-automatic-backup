@@ -25,7 +25,7 @@ Environment="RESTIC_CACHE_DIR=%C/restic-prune"
 
 # pipefail: so that redirecting stderr from the script to systemd-cat does not hide the failed command from OnFailure above.
 # `systemd-cat` allows showing the restic output to the systemd journal
-ExecStart=/bin/bash -c 'set -o pipefail; source $INSTALL_PREFIX/etc/restic/%I.env.sh && $INSTALL_PREFIX/bin/restic_prune.sh 2>&1 | systemd-cat'
+ExecStart=/bin/bash -c 'set -o pipefail; source {{ INSTALL_PREFIX }}/etc/restic/%I.env.sh && {{ INSTALL_PREFIX }}/bin/restic_prune.sh 2>&1 | systemd-cat'
 Restart=on-failure
 # RestartSec feeds the retry-limit arithmetic in [Unit].
 RestartSec=300

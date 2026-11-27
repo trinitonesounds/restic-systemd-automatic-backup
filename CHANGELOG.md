@@ -6,15 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- Debug scripts by setting `TRACE=1`.
+- From upstream (merged 2026-11): optional backup stats CSV log (`RESTIC_BACKUP_STATS_DIR`), and `resticw --diff-latest` to show the latest snapshot's changes.
 ### Changed
+- From upstream (merged 2026-11): the install-prefix placeholder in sources is now `{{ INSTALL_PREFIX }}` instead of `$INSTALL_PREFIX`. Backup stats and notifications are enabled by setting `RESTIC_BACKUP_STATS_DIR` or `RESTIC_BACKUP_NOTIFICATION_FILE`; `RESTIC_NOTIFY_BACKUP_STATS` is gone.
 - **Breaking:** backups no longer prune. `restic_backup.sh` runs `forget` without `--prune`, scoped to its host and tag. Pruning moves to a new `restic_prune.sh` with `restic-prune@.service` and `restic-prune@.timer` (weekly, Sunday 05:00), installed but not enabled. Enable the prune timer on every single-host setup, and on exactly one host per shared repository, or the repository is never pruned. See README "Shared repository across hosts". The cron, LaunchAgent and ScheduledTask setups get no prune job, so they no longer prune at all (they are being removed from this fork).
 - `forget` and `prune` wait up to 30 min for the repository lock (`--retry-lock 30m`) instead of failing while another host backs up. Requires restic 0.16+.
-- Warn on certain unset envvars instead of error-exit.
 - A backup where restic saves the snapshot but can't read some files (exit 3) is now treated as completed: `restic_backup.sh` logs a warning, still runs forget, then exits 3. `restic-backup@.service` no longer restarts on exit 3 (`RestartPreventExitStatus=3`), so the unit fails visibly without piling up partial snapshots. Other failures still stop before forget and retry.
 - `restic-backup@.service` retry limit now works: a failing backup gets at most 3 attempts (`StartLimitBurst=3` in a 4 h window, sized for runs up to 60 min), then stays failed until the window has passed. The old 4-in-21-min limit never triggered because each attempt took longer than the window. Successful runs count too, so the backup timer should fire at most every 80 min. Also removed duplicate `Description=`, `nm-unmetered` and `ProtectControlGroups=` lines.
 ### Fixed
 - Never pass an empty-string argument to restic. On restic 0.19+, an empty `RESTIC_BACKUP_EXTRA_ARGS` (the default), an empty `RESTIC_BACKUP_PATHS` entry or an unset `B2_CONNECTIONS` made `restic backup` exit 3, so forget never ran and the systemd unit looped through restarts, saving a snapshot each time.
+
+## [7.5.0] - 2025-11-09
+### Added
+- Debug scripts by setting `TRACE=1`.
+- Add semver-cli for git tagging.
+### Changed
+- Warn on certain unset envvars instead of error-exit.
 
 ## [7.4.0] - 2023-03-08
 ### Added
@@ -22,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for pre backup script at /etc/restic/pre_backup.sh [107](https://github.com/erikw/restic-automatic-backup-scheduler/pull/107)
 
 ### Fixed
-- Full path to `/bin/bash` in sytemd services. [#96](https://github.com/erikw/restic-automatic-backup-scheduler/issues/96)
+- Full path to `/bin/bash` in systemd services. [#96](https://github.com/erikw/restic-automatic-backup-scheduler/issues/96)
 
 ## [7.3.4] - 2022-04-29
 ### Fixed
@@ -105,11 +112,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    # systemctl enable restic-backup@<profile>.timer
    ```
 - **BREAKING CHANGE** moved script installation with makefile from `/usr/local/sbin` to `/bin` to have a simpler interface to work with `$PREFIX`.
-- **BREAKING CHANGE** renamed `etc/restic/*.env` files to `etc/restic/*.env.sh` to clearly communicate that it's a shell script that will be executed (source), and also hint at code editors what file this is to set corect syntax highligting etc. This also enables the shellcheck linter to work more easily on these files as well.
+- **BREAKING CHANGE** renamed `etc/restic/*.env` files to `etc/restic/*.env.sh` to clearly communicate that it's a shell script that will be executed (source), and also hint at code editors what file this is to set correct syntax highlighting etc. This also enables the shellcheck linter to work more easily on these files as well.
 - Renamed top level make install targets. The old `$ make install` is now `$ make install-systemd`
 
 ### Fixed
-- Installation with custom `PREFIX` now works properly with Make: `$ PREFIX=/usr/local make install` whill now install everything at the expected location. With this, it's easy to use this script as non-root user on e.g. an macOS system.
+- Installation with custom `PREFIX` now works properly with Make: `$ PREFIX=/usr/local make install` will now install everything at the expected location. With this, it's easy to use this script as non-root user on e.g. an macOS system.
 
 ## [4.0.0] - 2022-02-01
 ### Fixed
@@ -149,7 +156,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `restic_backup.sh` now finds `.backup_exclude` files on each backup path as intended.
-- Install executeables to `$PREFIX/sbin` instead of `$PREFIX/user/local/sbin`, so that `$ PREFIX=/usr/local make install` does what is expected.
+- Install executables to `$PREFIX/sbin` instead of `$PREFIX/user/local/sbin`, so that `$ PREFIX=/usr/local make install` does what is expected.
 
 ## [1.0.1] - 2021-12-03
 ### Fixed

@@ -23,14 +23,14 @@ There is no test suite. Validation is:
 
 ## Architecture
 
-**Install pipeline (Makefile).** Sources mirror their install paths (`bin/`, `etc/restic/`, `usr/lib/systemd/system/`, `etc/cron.d/`, `Library/LaunchAgents/`). `make` copies each file into `build/<same path>`, replaces the literal string `$INSTALL_PREFIX` with `$(INSTALL_PREFIX)` (which defaults to `$PREFIX`), then `install`s into `$PREFIX/<path>`. So:
-- Any source file that references another installed file must use the literal `$INSTALL_PREFIX` placeholder, never a hardcoded `/etc/...` or `/bin/...` path.
+**Install pipeline (Makefile).** Sources mirror their install paths (`bin/`, `etc/restic/`, `usr/lib/systemd/system/`, `etc/cron.d/`, `Library/LaunchAgents/`). `make` copies each file into `build/<same path>`, replaces the literal string `{{ INSTALL_PREFIX }}` with `$(INSTALL_PREFIX)` (which defaults to `$PREFIX`), then `install`s into `$PREFIX/<path>`. So:
+- Any source file that references another installed file must use the literal `{{ INSTALL_PREFIX }}` placeholder, never a hardcoded `/etc/...` or `/bin/...` path.
 - `build/` is gitignored output. Edit the source tree, not `build/`.
 - Config installs (`etc/restic/*`) back up existing files with a timestamped `.bak` suffix (GNU vs BSD `install` flags are handled).
 - `SRCS_SCRIPT`/`SRCS_SYSTEMD` use `filter-out` to exclude optional files (`cron_mail`, `systemd-email`, `nm-unmetered-connection.*`, `status-email-user@.service`). New optional files must be added there too, or they get installed by default.
 
 **Profiles = env files.** All runtime configuration is environment variables. `etc/restic/<profile>.env.sh` sources `_global.env.sh` first, then overrides it. Each scheduler selects a profile by name:
-- systemd: template units `restic-backup@<profile>` and `restic-check@<profile>`. `ExecStart` sources `$INSTALL_PREFIX/etc/restic/%I.env.sh` and then runs the script, piped to `systemd-cat`.
+- systemd: template units `restic-backup@<profile>` and `restic-check@<profile>`. `ExecStart` sources `{{ INSTALL_PREFIX }}/etc/restic/%I.env.sh` and then runs the script, piped to `systemd-cat`.
 - cron, LaunchAgent and ScheduledTask hardcode the `default` profile.
 - `bin/resticw --profile X <restic args>` sources a profile and runs plain `restic` commands.
 
